@@ -1,0 +1,36 @@
+version: '3.3'
+
+services:
+
+  chat:
+    container_name: "chat"
+    build:
+      context: .
+    depends_on:
+      - chat-postgres
+    ports:
+      - "8088:8088"
+    env_file:
+      - .env
+
+  chat-postgres:
+    image: postgres:15.3-alpine
+    container_name: "chat-postgres"
+    environment:
+      - POSTGRES_DB=${CHAT_POSTGRES_DBNAME}
+      - POSTGRES_USER=${CHAT_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${CHAT_POSTGRES_PASSWORD}
+    env_file:
+      - .env
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 100
+    ports:
+      - "5432:5432"
+
+volumes:
+  chat_postgres_data:
