@@ -1,10 +1,12 @@
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
 from chat.models import Message
 from chat.schemas import AddMessageRequest
+from chat.utils import row2dict
 
 
 message_returning_keys: tuple = (
@@ -31,6 +33,28 @@ message_returning: tuple = (
 
 
 class MessageCRUD:
+
+    @classmethod
+    async def get_messages(
+            cls,
+            author_id: int,
+            dest_id: int,
+            db: AsyncSession,
+    ) -> list:
+        select_stmt = sa.select(Message) \
+            .where(
+            sa.or_(
+                sa.and_(Message.author_id == author_id, Message.dest_id == dest_id),
+                sa.and_(Message.author_id == dest_id, Message.dest_id == author_id),
+            )
+        ).order_by(Message.dt_created)
+
+        try:
+            res = (await db.scalars(select_stmt)).all()
+            return list(map(lambda row: row2dict(row), res))
+        except OperationalError:
+            return []
+
     @classmethod
     async def add_message(
             cls,
@@ -49,7 +73,7 @@ class MessageCRUD:
             await db.commit()
 
             return dict(zip(message_returning_keys, res))
-        except sa.exc.OperationalError:
+        except OperationalError:
             return None
 
     @classmethod
@@ -70,7 +94,7 @@ class MessageCRUD:
             await db.commit()
 
             return dict(zip(message_returning_keys, res))
-        except sa.exc.OperationalError:
+        except OperationalError:
             return None
 
     @classmethod

@@ -12,6 +12,6 @@ class BaseTable(DeclarativeBase):
         doc="Unique index of element",
     )
 
-    def __repr__(self):
-        sa.Columns = {sa.Column.name: getattr(self, sa.Column.name) for sa.Column in self.__table__.sa.Columns}
-        return f'<{self.__tablename__}: {", ".join(map(lambda x: f"{x[0]}={x[1]}", sa.Columns.items()))}>'
+    # def __repr__(self):
+    #     sa.Columns = {sa.Column.name: getattr(self, sa.Column.name) for sa.Column in self.__table__.sa.Columns}
+    #     return f'<{self.__tablename__}: {", ".join(map(lambda x: f"{x[0]}={x[1]}", sa.Columns.items()))}>'

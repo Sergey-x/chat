@@ -6,7 +6,7 @@ import pydantic as pd
 class MessageResponseItem(pd.BaseModel):
     id: int
     dt_created: datetime | str
-    dt_updated: datetime | str | None
+    dt_updated: None | datetime | str
     text: str
     is_available: bool
     author_id: int

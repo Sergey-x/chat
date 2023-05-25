@@ -2,14 +2,46 @@ from typing import Annotated
 
 import fastapi as fa
 from fastapi.responses import ORJSONResponse
+from fastapi_pagination import Page, paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chat.crud import MessageCRUD
 from chat.handlers.deps import get_db
+from chat.pagination import MessagePaginationParams
 from chat.schemas import AddMessageRequest, MessageResponseItem, UpdateMessageRequest
 
 
 api_router = fa.APIRouter()
+
+
+@api_router.get(
+    "/private",
+    response_class=ORJSONResponse,
+    response_model=Page[MessageResponseItem],
+    status_code=fa.status.HTTP_200_OK,
+    responses={
+        fa.status.HTTP_200_OK: {
+            "description": "Ok",
+        },
+        fa.status.HTTP_401_UNAUTHORIZED: {
+            "description": "Could not validate credentials",
+        },
+        fa.status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad request",
+        },
+    },
+)
+async def get_message(
+        opponent_id: Annotated[int | None, fa.Query()] = None,
+        x_user_identity: Annotated[int | None, fa.Header()] = None,
+        db: AsyncSession = fa.Depends(get_db),
+        params: MessagePaginationParams = fa.Depends(),  # noqa
+):
+    if opponent_id is None:
+        raise fa.HTTPException(status_code=fa.status.HTTP_400_BAD_REQUEST, detail="Opponent is not specified")
+
+    res = await MessageCRUD.get_messages(x_user_identity, opponent_id, db)
+    return paginate(res)
 
 
 @api_router.patch(
