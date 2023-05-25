@@ -7,8 +7,10 @@ WORKDIR /chat
 
 COPY ./pyproject.toml .
 COPY ./poetry.lock .
-COPY . .
 
 RUN poetry install
+
+COPY . .
+
 
 ENTRYPOINT uvicorn chat.main:app --host 0.0.0.0 --port 8088 --reload
