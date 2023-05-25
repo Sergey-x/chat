@@ -2,7 +2,7 @@ from typing import Annotated
 
 import fastapi as fa
 from fastapi.responses import ORJSONResponse
-from fastapi_pagination import Page, paginate
+from fastapi_pagination import Page
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chat.crud import MessageCRUD
@@ -17,7 +17,7 @@ api_router = fa.APIRouter()
 @api_router.get(
     "/private",
     response_class=ORJSONResponse,
-    response_model=Page[MessageResponseItem],
+    response_model=Page[object],
     status_code=fa.status.HTTP_200_OK,
     responses={
         fa.status.HTTP_200_OK: {
@@ -41,7 +41,7 @@ async def get_message(
         raise fa.HTTPException(status_code=fa.status.HTTP_400_BAD_REQUEST, detail="Opponent is not specified")
 
     res = await MessageCRUD.get_messages(x_user_identity, opponent_id, db)
-    return paginate(res)
+    return res
 
 
 @api_router.patch(

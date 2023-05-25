@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,6 @@ from sqlalchemy.sql import func
 
 from chat.models import Message
 from chat.schemas import AddMessageRequest
-from chat.utils import row2dict
 
 
 message_returning_keys: tuple = (
@@ -40,7 +40,7 @@ class MessageCRUD:
             author_id: int,
             dest_id: int,
             db: AsyncSession,
-    ) -> list:
+    ):
         select_stmt = sa.select(Message) \
             .where(
             sa.or_(
@@ -50,8 +50,7 @@ class MessageCRUD:
         ).order_by(Message.dt_created)
 
         try:
-            res = (await db.scalars(select_stmt)).all()
-            return list(map(lambda row: row2dict(row), res))
+            return await paginate(db, select_stmt)
         except OperationalError:
             return []
 
