@@ -4,7 +4,6 @@ from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
 from .base import BaseTable
-from .messages_participants import MessagesToParticipants
 
 
 MESSAGES_TABLE_NAME: str = 'messages'
@@ -47,4 +46,4 @@ class Message(BaseTable):
         doc='Id чата, в котором отправлено сообщение',
     )
 
-    read_participants: Mapped[list["MessagesToParticipants"]] = relationship()
+    read_participants: Mapped[list["MessagesToParticipants"]] = relationship()  # noqa
