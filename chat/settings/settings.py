@@ -2,9 +2,8 @@ from functools import lru_cache
 
 import pydantic as pd
 from dotenv import load_dotenv
-
-from chat.enums import Stages
-from chat.log import get_logger
+from enums import Stages
+from log import get_logger
 
 
 logger = get_logger(__name__)

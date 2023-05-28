@@ -13,4 +13,4 @@ RUN poetry install
 COPY . .
 
 
-ENTRYPOINT uvicorn chat.main:app --host 0.0.0.0 --port 8088 --reload
+ENTRYPOINT uvicorn main:app --host 0.0.0.0 --port 8088 --reload

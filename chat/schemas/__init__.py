@@ -1,9 +1,18 @@
-from .request import AddMessageRequest, UpdateMessageRequest
-from .response import MessageResponseItem
+from .chats import (
+    ChatResponseItem,
+    CreateChatRequestSchema,
+    GetChatsResponseItem,
+    UpdateChatRequestSchema,
+)
+from .messages import CreateMessageRequestSchema, MessageResponseItem, UpdateMessageRequestSchema
 
 
 __all__ = (
-    "AddMessageRequest",
-    "UpdateMessageRequest",
     "MessageResponseItem",
+    "CreateMessageRequestSchema",
+    "UpdateMessageRequestSchema",
+    "ChatResponseItem",
+    "GetChatsResponseItem",
+    "CreateChatRequestSchema",
+    "UpdateChatRequestSchema",
 )

@@ -10,5 +10,4 @@ class MessageResponseItem(pd.BaseModel):
     text: str
     is_available: bool
     author_id: int
-    dest_id: int
-    read: bool
+    chat_id: int

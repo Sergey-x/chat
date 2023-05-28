@@ -1,12 +1,11 @@
 import os
 import time
 
+from log import get_logger
+from settings import SETTINGS
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-
-from chat.log import get_logger
-from chat.settings import SETTINGS
 
 
 logger = get_logger(__name__)

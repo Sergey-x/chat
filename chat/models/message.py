@@ -1,8 +1,10 @@
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.orm import Mapped, relationship
 from sqlalchemy.sql import func
 
 from .base import BaseTable
+from .messages_participants import MessagesToParticipants
 
 
 MESSAGES_TABLE_NAME: str = 'messages'
@@ -40,13 +42,9 @@ class Message(BaseTable):
         sa.Integer,
     )
 
-    dest_id = sa.Column(
+    chat_id = sa.Column(
         sa.Integer,
+        doc='Id чата, в котором отправлено сообщение',
     )
 
-    read = sa.Column(
-        sa.Boolean,
-        nullable=False,
-        default=False,
-        doc='Прочитано сообщение получателем или нет',
-    )
+    read_participants: Mapped[list["MessagesToParticipants"]] = relationship()

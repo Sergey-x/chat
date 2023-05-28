@@ -1,6 +1,5 @@
+from db.db import MyDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from chat.db.db import MyDatabase
 
 
 async def get_db() -> AsyncSession:

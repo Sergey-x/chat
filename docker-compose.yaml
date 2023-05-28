@@ -9,7 +9,7 @@ services:
     depends_on:
       - chat-postgres
     volumes:
-      - .:/chat
+      - ./chat:/chat
     ports:
       - "8088:8088"
     env_file:

@@ -1,6 +1,5 @@
 import sqlalchemy as sa
-
-from chat.db import DeclarativeBase
+from db import DeclarativeBase
 
 
 class BaseTable(DeclarativeBase):
