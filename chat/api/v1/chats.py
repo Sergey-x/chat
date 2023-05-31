@@ -35,8 +35,50 @@ async def get_chats(
         user_id: Annotated[int | None, fa.Header(alias=USER_ID_HTTP_HEADER)] = None,
         db: AsyncSession = fa.Depends(get_db),
 ):
-    res: list[dict] = await ChatCRUD.get_chats(user_id, db)
+    res: list[ChatResponseItem] | None = await ChatCRUD.get_chats(user_id, db)
+    if res is None:
+        raise fa.HTTPException(status_code=fa.status.HTTP_500_INTERNAL_SERVER_ERROR)
     return GetChatsResponseItem(chats=res)
+
+
+@api_router.get(
+    "/{chat_id}",
+    response_class=ORJSONResponse,
+    status_code=fa.status.HTTP_200_OK,
+    responses={
+        fa.status.HTTP_200_OK: {
+            "description": "Ok",
+        },
+        fa.status.HTTP_401_UNAUTHORIZED: {
+            "description": "Could not validate credentials",
+        },
+        fa.status.HTTP_404_NOT_FOUND: {
+            "description": "Chat not found",
+        },
+    },
+)
+async def get_chat_by_id(
+        chat_id: Annotated[int, fa.Path()],
+        user_id: Annotated[int | None, fa.Header(alias=USER_ID_HTTP_HEADER)] = None,
+        db: AsyncSession = fa.Depends(get_db),
+):
+    full_chat = await ChatCRUD.get_chat_by_id(chat_id, db)
+    if full_chat is None:
+        raise fa.HTTPException(status_code=fa.status.HTTP_404_NOT_FOUND)
+
+    participant_objects = getattr(full_chat.get("chat"), "participants")
+
+    # check user is member of the chat
+    is_user_member_of_chat: bool = False
+    for member in participant_objects:
+        if getattr(member, "participant_id") == user_id:
+            is_user_member_of_chat = True
+            break
+
+    if not is_user_member_of_chat:
+        raise fa.HTTPException(status_code=fa.status.HTTP_400_BAD_REQUEST,
+                               detail="You don't have permission to read this chat")
+    return full_chat
 
 
 @api_router.post(
@@ -56,7 +98,7 @@ async def get_chats(
 async def create_chat(chat: CreateChatRequestSchema,
                       user_id: Annotated[int | None, fa.Header(alias=USER_ID_HTTP_HEADER)] = None,
                       db: AsyncSession = fa.Depends(get_db)):
-    res = await ChatCRUD.create_chat(
+    res: ChatResponseItem | None = await ChatCRUD.create_chat(
         chat_name=chat.name,
         participant_ids=chat.participants,
         admin_id=user_id,

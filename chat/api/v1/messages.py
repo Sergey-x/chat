@@ -107,12 +107,9 @@ async def add_message(message: CreateMessageRequestSchema,
     Если message.chat_id установлен, то просто прикрепляем сообщение к указанному чату.
     """
     chat: ChatResponseItem | None = None
-    print(message)
     if message.chat_id is None:
         # Сначала создаем чат
-        print("Creating chat")
         chat = await ChatCRUD.create_chat(db=db, participant_ids=[user_id, message.dest_id], is_private=True, )
-        print(chat)
         if chat is None:
             raise fa.HTTPException(status_code=fa.status.HTTP_500_INTERNAL_SERVER_ERROR,
                                    detail="Не удалось создать приватный чат")

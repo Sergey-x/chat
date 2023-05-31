@@ -1,6 +1,7 @@
 from .chats import (
     ChatResponseItem,
     CreateChatRequestSchema,
+    FullChatResponseItem,
     GetChatsResponseItem,
     UpdateChatRequestSchema,
 )
@@ -13,6 +14,7 @@ __all__ = (
     "UpdateMessageRequestSchema",
     "ChatResponseItem",
     "GetChatsResponseItem",
+    "FullChatResponseItem",
     "CreateChatRequestSchema",
     "UpdateChatRequestSchema",
 )

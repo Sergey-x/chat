@@ -1,8 +1,11 @@
 import sqlalchemy as sa
-from models import Chat, ChatParticipant
+from models import Chat, ChatParticipant, Message, MessagesToParticipants
 from schemas import ChatResponseItem, UpdateChatRequestSchema
+from schemas.chats.response import NEW_MESSAGE_COUNT, GetFullChatResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.expression import func
+from utils import row2dict
 
 
 chat_returning_keys: tuple = (
@@ -23,6 +26,27 @@ chat_returning: tuple = (
     Chat.is_private,
 )
 
+full_chat_returning_keys: tuple = (
+    "chat",
+    "id",
+    "dt_created",
+    "dt_updated",
+    "admin_id",
+    "name",
+    "is_private",
+    "participants",
+)
+
+full_chat_returning: tuple = (
+    Chat.id,
+    Chat.dt_created,
+    Chat.dt_updated,
+    Chat.admin_id,
+    Chat.name,
+    Chat.is_private,
+    Chat.participants,
+)
+
 
 class ChatCRUD:
     @classmethod
@@ -30,23 +54,87 @@ class ChatCRUD:
             cls,
             participant_id: int,
             db: AsyncSession,
-    ) -> list[dict]:
-        chat_ids_subquery = sa.select(ChatParticipant.chat_id).where(
-            sa.and_(
-                ChatParticipant.is_available == True,  # noqa
-                ChatParticipant.participant_id == participant_id,
+    ) -> list[ChatResponseItem] | None:
+        # Подзапрос на получение id чатов, в которых состоит пользователь
+        chat_ids_subquery = (
+            sa.select(ChatParticipant.chat_id)
+            .where(
+                sa.and_(
+                    ChatParticipant.is_available == True,  # noqa
+                    ChatParticipant.participant_id == participant_id,
+                )
             )
         )
 
-        select_stmt = sa.select(*chat_returning) \
-            .filter(Chat.id.in_(chat_ids_subquery)) \
-            .order_by(Chat.dt_updated)
+        # Подзапрос на получение количества непрочитанных сообщений для чата
+        unread_msgs_subquery = (
+            sa.select(func.count(MessagesToParticipants.message_id))
+            .where(
+                sa.and_(
+                    MessagesToParticipants.participant_id == participant_id,
+                    MessagesToParticipants.is_read == False,  # noqa
+                    MessagesToParticipants.chat_id == Chat.id,
+                )
+            ).order_by(None).scalar_subquery()
+        )
 
+        # Подзапрос на получение последнего сообщения чата
+        last_chat_msg_id = (
+            sa.select(Message.id)
+            .filter(Message.chat_id == Chat.id)
+            .order_by(Message.dt_created.desc())
+            .order_by(Message.id.desc())
+            .limit(1)
+            .correlate(Chat)
+            .as_scalar()
+        )
+
+        # итоговый запрос
+        select_stmt = (
+            sa.select(
+                *chat_returning,
+                unread_msgs_subquery.label(NEW_MESSAGE_COUNT),
+                Message,
+            )
+            .filter(Chat.id.in_(chat_ids_subquery))
+            .outerjoin(Message, Message.id == last_chat_msg_id)
+            .order_by(Chat.dt_updated)
+        )
+
+        # добавляем в схему возврата кол-во непрочитанных сообщений для чата
         try:
             res = (await db.execute(select_stmt)).all()
-            return [dict(zip(chat_returning_keys, row)) for row in res]
+            chats: list[ChatResponseItem] = []
+            for row in res:
+                chat_response_item: ChatResponseItem = ChatResponseItem.parse_obj(dict(zip(chat_returning_keys, row)))
+                # Осторожно порядок определен в запросе выше
+                chat_response_item.new_message_count = row[-2]
+                chat_response_item.last_message = row2dict(row[-1]) if row[-1] else None
+                chats.append(chat_response_item)
+            return chats
         except OperationalError:
-            return []
+            return None
+
+    @classmethod
+    async def get_chat_by_id(
+            cls,
+            chat_id: int,
+            db: AsyncSession,
+    ) -> GetFullChatResponse | None:
+        select_chat_stmt = (
+            sa.select(Chat)
+            .where(Chat.id == chat_id)
+        )
+
+        try:
+            res = (await db.execute(select_chat_stmt)).scalars()
+
+            if not res:
+                return None
+            res = dict(zip(full_chat_returning_keys, res))
+            return res
+        except OperationalError:
+            return None
 
     @classmethod
     async def create_chat(

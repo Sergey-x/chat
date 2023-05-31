@@ -44,4 +44,4 @@ class Chat(BaseTable):
         doc='Если is_private=True, то это переписка между 2-мя людьми',
     )
 
-    participants = relationship("ChatParticipant")
+    participants = relationship("ChatParticipant", back_populates="parent", lazy="selectin")

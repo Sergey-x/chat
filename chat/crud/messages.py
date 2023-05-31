@@ -65,6 +65,7 @@ class MessageCRUD:
                             message_id=new_msg.id,
                             participant_id=participant_id,
                             is_read=bool(participant_id == author_id),  # свое сообщение считается сразу же прочитанным
+                            chat_id=chat_id,
                         )
                     )
                 db.add_all(message_participants)
